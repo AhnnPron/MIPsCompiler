@@ -6,42 +6,57 @@ public class MipsCCompiler
 	private SourceReader theSource;
 	private String filename;
 	
-	private String secondRegisterAccessed;
-	private String lastRegisterAccessed;
-	
 	public MipsCCompiler(String filename)
 	{
 		this.filename = filename;
 		this.theSource = new SourceReader(filename);
 		this.theDataMemory = new DataMemory(200000);
 		this.theRegisterCollection = new RegisterCollection(16); // $zero to $t15
-		this.lastRegisterAccessed = lastRegisterAccessed; 
-		this.secondRegisterAccessed = secondRegisterAccessed; 
+	
 		
+		/*
+		    int x; --> addi $t0, $zero, 5000
+			x = 7; --> addi $1, $zero, 7
+					   sw $t1, 0($t0)
+		 */
 		
-		//System.out.println(this.theSource.getNextLine());
-		//System.out.println(this.theSource.getNextLine());
-		//System.out.println(this.theSource.getNextLine());
-		
-		
-
-		
-		
-		for(int i = 0; i < this.theSource.getTheHighLevelCode().size(); i++)
+		String instruction; 
+		String output;
+		while(true)
 		{
-			if(this.theSource.getTheHighLevelCode().get(0) == "int")
+			instruction = this.theSource.getNextLine();
+			if(instruction.contentEquals("End of File"))
 			{
-				this.lastRegisterAccessed = this.theRegisterCollection.getNextAvailableRegisterName();
-				System.out.println("addi " + this.lastRegisterAccessed + ", $zero, " + this.theDataMemory.getAddressForNewMemory());
-			//else if(this.theSource.getNextLine() == char)
-				//{
-				System.out.println("addi " + this.theRegisterCollection.getNextAvailableRegisterName() + ", $zero, " + this.theSource.getTheHighLevelCode().get(5));
-				this.secondRegisterAccessed = this.theRegisterCollection.getNextAvailableRegisterName();
-				System.out.println("sw " + this.secondRegisterAccessed + "0(" + this.lastRegisterAccessed + ")");
-				//}
+				break; // we're done!
 			}
-			else break; 
+			else
+			{
+				// process this instruction
+				output = "";
+				String[] parts = instruction.split(" "); // count the buckets except the spaces
+				if(parts[0].trim().contentEquals("int")) // if the first instruction is an int
+				{
+					String varName = parts[1].trim(); // grabbing the variable name x
+					varName = varName.substring(0, varName.length()-1); // grab everything but the semicolon at the end
+					
+					output += "addi " + this.theRegisterCollection.getNextAvailableRegisterName(varName) // letting the register know it is associated with the varName 
+					+ ", $zero, " + this.theDataMemory.getAddressForNewMemory();
+				}
+				else
+				{
+					parts = instruction.split("="); // count the buckets except the equals sign
+					String varValue = parts[1].trim(); // x = 7 --> grabbing the 7
+					varValue = varValue.substring(0, varValue.length()-1); // grab everything but the semicolon at the end --> varValue.length()-1
+					
+					String tempRegisterName =  this.theRegisterCollection.getNextAvailableRegisterName("__tempImmediate__"); // $t1
+					
+					String oldRegisterName = this.theRegisterCollection.getRegisterNameByVarName(parts[0].trim()); // $t0
+					
+					output += "addi " + tempRegisterName + ", $zero, " +  varValue + "\n" 
+					+ "sw " + tempRegisterName + ", 0(" + oldRegisterName + ")"; 
+				}
+				System.out.println(output); 
 			}
 		}
-	
+	}
 }

@@ -13,13 +13,27 @@ public class RegisterCollection
 		}
 	}
 	
-	public String getNextAvailableRegisterName()
+	public String getRegisterNameByVarName(String varName)
+	{
+		for(int i = 1; i < this.theRegisters.length; i++)
+		{
+			if(this.theRegisters[i].isInUse() && this.theRegisters[i].getVarName().equals(varName))
+				// if the current register I'm looking at is in use and it matches the varName
+			{
+				return this.theRegisters[i].getName(); 
+			}
+		}
+		throw new RuntimeException("Variable Name not found");
+	}
+	
+	public String getNextAvailableRegisterName(String varName)
 	{
 		for(int i = 1; i < this.theRegisters.length; i++)
 		{
 			if(!this.theRegisters[i].isInUse()) // find a register that's not in use
 			{
 				this.theRegisters[i].setInUse(true); // once we find one that's available, we'll use it and then it will be inUse
+				this.theRegisters[i].setVarName(varName);
 				return this.theRegisters[i].getName(); // return the name of that corresponding register
 			}
 		}
